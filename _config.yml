@@ -1,15 +1,9 @@
-# Permalinks
-#
-# Use of `relative_permalinks` ensures post links from the index work properly.
-permalink:           pretty
-relative_permalinks: true
 
 # Setup
 title:               TrustKit
 tagline:             Effortless and universal SSL pinning for iOS and OS X
 url:                 https://datatheorem.github.io/TrustKit
-paginate:            1
-baseurl:             https://datatheorem.github.io/TrustKit
+baseurl:             /TrustKit
 
 # Assets
 #
@@ -21,8 +15,6 @@ sass:
 # About/contact
 author:
   name:              TrustKit Team
-#  url:               https://twitter.com/mdo
-#  email:             markdotto@gmail.com
 
 # Custom vars
 version:             1.2.5
