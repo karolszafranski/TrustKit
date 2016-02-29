@@ -2,7 +2,6 @@
 layout: page
 title: Getting Started
 ---
-
 Getting Started
 ===============
 
@@ -46,16 +45,12 @@ certificate's Subject Public Key Info; this is the same as what is described in
 the [HTTP Public Key Pinning
 specification](https://developer.mozilla.org/en-US/docs/Web/Security/Public_Key_Pinning).
 
-To generate such values, three bash scripts are available. The first two scripts
-can be used to generate the pin configuration from a PEM or DER certificate:
+To generate such values, a Python helper script is available within the project's 
+repository; it can be used to generate the pin configuration from a PEM or DER 
+certificate:
 
-    $ ./get_pin_from_pem_certificate.sh ca.pem
-    $ ./get_pin_from_der_certificate.sh ca.der
-
-The second script can be used to generate the pin configuration for the highest
-certificate within the certificate chain returned by a given server:
-
-    $ ./get_pin_from_server.sh www.google.com
+    $ python get_pin_from_certificate.py ca.pem
+    $ python get_pin_from_certificate.py --type DER ca.der
 
 
 Deploying TrustKit
@@ -180,14 +175,14 @@ be retrieved or built before being passed to the
 [`TSKPinningValidator` class](https://datatheorem.github.io/TrustKit/documentation/Classes/TSKPinningValidator.html) 
 for validation. 
  
-`TSKPinningValidator` returns a `TSKTrustDecision` which describes whether the SSL connection 
+`TSKPinningValidator` then returns a `TSKTrustDecision` which describes whether the SSL connection 
 should be allowed or blocked, based on the App's SSL pinning policy.
  
  The following connections require manual pin validation:
  
  1. All connections within an App that disables TrustKit's network delegate swizzling by setting the `kTSKSwizzleNetworkDelegates` configuration key to `NO`.
  2. Connections that do not rely on the `NSURLConnection` or `NSURLSession` APIs:
-     * Connections leveraging different network APIs (such as `NSStream`). Instructions on how to retrieve the server's trust object are available in the [Apple documentation](https://developer.apple.com/library/mac/documentation/NetworkingInternet/Conceptual/NetworkingTopics/Articles/OverridingSSLChainValidationCorrectly.html).
+     * Connections leveraging different network APIs (such as `NSStream`). Apple has released a [technical note describing how the server's trust object can be retrieved][https://developer.apple.com/library/ios/technotes/tn2232/_index.html] for the various network APIs (`NSStream`, `CFNetwork`, etc.) available on iOS and OS X.
      * Connections initiated using a third-party SSL library such as OpenSSL. The server's trust object needs to be built using the received certificate chain.
  3. Connections happening within an external process:
      * `WKWebView` connections: the server's trust object can be retrieved and validated within the `webView:didReceiveAuthenticationChallenge:completionHandler:` method.
@@ -253,7 +248,5 @@ dynamically linked.
     ![](https://datatheorem.github.io/TrustKit/images/linking2_dynamic.png)
 
 3. Lastly, initialize TrustKit with your pinning policy.
-
-
 
 
