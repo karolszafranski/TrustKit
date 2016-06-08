@@ -5,7 +5,7 @@ title: Readme
 TrustKit
 ========
 
-[![Build Status](https://travis-ci.org/datatheorem/TrustKit.svg?branch=1.3.0)](https://travis-ci.org/datatheorem/TrustKit) [![Version Status](https://img.shields.io/cocoapods/v/TrustKit.svg?style=flat)](https://cocoapods.org/pods/TrustKit) [![Platform](https://img.shields.io/cocoapods/p/TrustKit.svg?style=flat)](https://cocoapods.org/pods/TrustKit) [![License MIT](https://img.shields.io/cocoapods/l/TrustKit.svg?style=flat)](https://en.wikipedia.org/wiki/MIT_License)
+[![Build Status](https://travis-ci.org/datatheorem/TrustKit.svg?branch=1.3.1)](https://travis-ci.org/datatheorem/TrustKit) [![Version Status](https://img.shields.io/cocoapods/v/TrustKit.svg?style=flat)](https://cocoapods.org/pods/TrustKit) [![Platform](https://img.shields.io/cocoapods/p/TrustKit.svg?style=flat)](https://cocoapods.org/pods/TrustKit) [![License MIT](https://img.shields.io/cocoapods/l/TrustKit.svg?style=flat)](https://en.wikipedia.org/wiki/MIT_License)
 
 **TrustKit** is an open source framework that makes it easy to deploy SSL public key pinning in any iOS or OS X App; it supports both Swift and Objective-C Apps.
 
@@ -98,9 +98,9 @@ let trustKitConfig = [
 TrustKit.initializeWithConfiguration(config)
 ```
 
-Once **TrustKit** has been initialized, it will by default swizzle the App's _NSURLSession_ and _NSURLConnection_ delegates to verify the server's certificate against the configured pinning policy, whenever an HTTPS connection is initiated. If report URIs have been configured, the App will also send reports to the specified URIs whenever a pin validation failure occurred.
+Once **TrustKit** has been initialized and if `kTSKSwizzleNetworkDelegates` is enabled in the policy, TrustKit will automatically swizzle the App's _NSURLSession_ and _NSURLConnection_ delegates to verify the server's certificate against the configured pinning policy, whenever an HTTPS connection is initiated. If report URIs have been configured, the App will also send reports to the specified URIs whenever a pin validation failure occurred.
 
-The swizzling behavior can be disabled via the `kTSKSwizzleNetworkDelegates` setting, and a server's certificate chain can easily be checked against the App's SSL pinning policy using the `TSKPinningValidator` class, for example to implement an authentication handler.
+The swizzling behavior should only be used for simple Apps. When swizzling is disabled, a server's certificate chain can easily be manually checked against the App's SSL pinning policy using the `TSKPinningValidator` class, for example to implement an authentication handler.
 
 For more information, see the [Getting Started][getting-started] guide.
 
