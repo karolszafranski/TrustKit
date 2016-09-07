@@ -144,8 +144,8 @@ in several scenarios including:
     
 * Apps with complex connection delegates, for example to handle client 
 authentication via certificates or basic authentication.
-* Apps where method swizzling is already performed by another module or library 
-(such as New Relic).
+* Apps where method swizzling of the connection delegates is already performed 
+by another module or library (such as Analytics SDKs)
 * Apps that do no use `NSURLSession` or `NSURLConnection` for their 
 connections.
 
@@ -190,31 +190,6 @@ which contains its certificate chain, needs to be retrieved or built before bein
 passed to the
 [`TSKPinningValidator` class](https://datatheorem.github.io/TrustKit/documentation/Classes/TSKPinningValidator.html) 
 for validation. 
- 
-`TSKPinningValidator` then returns a `TSKTrustDecision` which describes whether 
-the SSL connection should be allowed or blocked, based on the App's SSL pinning 
-policy.
- 
- The following connections require manual pin validation:
- 
- 1. All connections within an App that disables TrustKit's network delegate 
- swizzling by setting the `kTSKSwizzleNetworkDelegates` configuration key to 
- `NO`.
- 2. Connections that do not rely on the `NSURLConnection` or `NSURLSession` 
- APIs:
-     * Connections leveraging different network APIs (such as `NSStream`). Apple 
-     has released a [technical note describing how the server's trust object can be retrieved][https://developer.apple.com/library/ios/technotes/tn2232/_index.html] for the various network APIs (`NSStream`, `CFNetwork`, 
-     etc.) available on iOS and OS X.
-     * Connections initiated using a third-party SSL library such as OpenSSL. The 
-     server's trust object needs to be built using the received certificate chain.
- 3. Connections happening outside of the App's process:
-     * `WKWebView` connections: the server's trust object can be retrieved and 
-     validated within the 
-     `webView:didReceiveAuthenticationChallenge:completionHandler:` method.
-     * `NSURLSession` connections using the background transfer service: the 
-     server's trust object can be retrieved and validated within the 
-     `application:handleEventsForBackgroundURLSession:completionHandler:` 
-     method.
 
 
 ## Pinning in WebViews
@@ -271,8 +246,8 @@ Settings.
 
 ### Adding TrustKit as a Dependency - Dynamic Linking
 
-If CocoaPods can't be used and for Apps targeting iOS 8+ or OS X, TrustKit can be 
-dynamically linked.
+If CocoaPods can't be used and for Apps targeting iOS 8+, macOS, tvOS or 
+watchOS, TrustKit can be dynamically linked.
 
 1. Drag and drop the TrustKit Xcode project file in your project:
 
