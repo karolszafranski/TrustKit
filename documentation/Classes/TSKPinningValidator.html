@@ -60,6 +60,8 @@
 		
 		<option value="//api/name/evaluateTrust:forHostname:">+ evaluateTrust:forHostname:</option>
 		
+		<option value="//api/name/handleChallenge:completionHandler:">+ handleChallenge:completionHandler:</option>
+		
 	</optgroup>
 	
 
@@ -98,73 +100,28 @@
 						<h2 class="subtitle subtitle-overview">Overview</h2>
 						<p><code>TSKPinningValidator</code> is a class for manually verifying a server&rsquo;s identity against the global SSL pinning policy.</p>
 
-<p>In specific scenarios, <a href="../Classes/TrustKit.html">TrustKit</a> cannot intercept outgoing SSL connections and automatically validate the server&rsquo;s identity against the pinning policy. For these connections, the pin validation must be manually triggered: the server&rsquo;s <code>SecTrustRef</code> object, which contains its certificate chain, needs to be retrieved or built before being passed to <code>TSKPinningValidator</code> for validation.</p>
+<p>In specific scenarios, <a href="../Classes/TrustKit.html">TrustKit</a> cannot intercept outgoing SSL connections and automatically validate the server&rsquo;s identity against the pinning policy:</p>
 
-<p><code>TSKPinningValidator</code> returns a <a href="../Constants/TSKTrustDecision.html"><code>TSKTrustDecision</code></a> which describes whether the SSL connection should be allowed or blocked, based on the global pinning policy.</p>
-
-<p>The following connections require manual pin validation:</p>
-
-<ol>
+<ul>
 <li>All connections within an App that disables TrustKit&rsquo;s network delegate swizzling by setting the <code>kTSKSwizzleNetworkDelegates</code> configuration key to <code>NO</code>.</li>
 <li>Connections that do not rely on the <code>NSURLConnection</code> or <code>NSURLSession</code> APIs:
 
 <ul>
-<li>Connections leveraging lower-level APIs (such as <code>NSStream</code>). Instructions on how to retrieve the server&rsquo;s trust object are available at <a href="https://developer.apple.com/library/mac/documentation/NetworkingInternet/Conceptual/NetworkingTopics/Articles/OverridingSSLChainValidationCorrectly.html.">https://developer.apple.com/library/mac/documentation/NetworkingInternet/Conceptual/NetworkingTopics/Articles/OverridingSSLChainValidationCorrectly.html.</a></li>
-<li>Connections initiated using a third-party SSL library such as OpenSSL. The server&rsquo;s <code>SecTrustRef</code> object needs to be built using the received certificate chain.</li>
+<li> <code>WKWebView</code> connections.</li>
+<li> Connections leveraging low-level network APIs (such as <code>NSStream</code>).</li>
+<li> Connections initiated using a third-party SSL library such as OpenSSL.</li>
 </ul>
 </li>
-<li>Connections happening within an external process:
+</ul>
+
+
+<p>For these connections, pin validation must be manually triggered using one of the two available methods:</p>
 
 <ul>
-<li><code>WKWebView</code> connections: the server&rsquo;s <code>SecTrustRef</code> object can be retrieved and validated within the <code>webView:didReceiveAuthenticationChallenge:completionHandler:</code> method.</li>
-<li><code>NSURLSession</code> connections using the background transfer service: the server&rsquo;s <code>SecTrustRef</code> object can be retrieved and validated within the <code>application:handleEventsForBackgroundURLSession:completionHandler:</code> method.</li>
+<li><a href="#//api/name/evaluateTrust:forHostname:"><code>evaluateTrust:forHostname:</code></a> which evaluates the server&rsquo;s certificate chain against the global SSL pinning policy.</li>
+<li><a href="#//api/name/handleChallenge:completionHandler:"><code>handleChallenge:completionHandler:</code></a> a helper method to be used for implementing pinning validation in challenge handler methods within <code>NSURLSession</code> and <code>WKWebView</code> delegates.</li>
 </ul>
-</li>
-</ol>
 
-
-<p>For example, <code>TSKPinningValidator</code> should be used as follow when verifying the server&rsquo;s identity within an <code>NSURLSession</code> or <code>WKWebView</code> authentication handler:</p>
-
-<pre><code>if ([challenge.protectionSpace.authenticationMethod isEqualToString:NSURLAuthenticationMethodServerTrust])
-{
-    // Check the trust object against the pinning policy
-    SecTrustRef serverTrust = challenge.protectionSpace.serverTrust;
-    NSString *serverHostname = challenge.protectionSpace.host;
-
-    TSKTrustDecision trustDecision = [TSKPinningValidator evaluateTrust:serverTrust 
-                                                            forHostname:serverHostname];
-
-    if (trustDecision == TSKTrustDecisionShouldAllowConnection)
-    {
-        // Success
-        completionHandler(NSURLSessionAuthChallengeUseCredential, 
-                          [NSURLCredential credentialForTrust:serverTrust]);
-    }
-    else if (trustDecision == TSKTrustDecisionDomainNotPinned)
-    {
-        // Domain was not pinned; we need to do the default validation ourselves to avoid disabling
-        // SSL validation for all non-pinned domains
-        SecTrustResultType trustResult = 0;
-        SecTrustEvaluate(serverTrust, &amp;trustResult);
-        if ((trustResult != kSecTrustResultUnspecified) &amp;&amp; (trustResult != kSecTrustResultProceed))
-        {
-            // Default SSL validation failed - block the connection
-            completionHandler(NSURLSessionAuthChallengeCancelAuthenticationChallenge, NULL);
-        }
-        else
-        {
-            // Default SSL validation succeeded
-            completionHandler(NSURLSessionAuthChallengeUseCredential, 
-                              [NSURLCredential credentialForTrust:serverTrust]);
-        }
-    }
-    else
-    {
-        // Pinning validation failed - block the connection
-        completionHandler(NSURLSessionAuthChallengeCancelAuthenticationChallenge, NULL);
-    }
-}
-</code></pre>
 					</div>
 					
 					
@@ -191,12 +148,12 @@
 			
 			
 			<div class="method-subsection brief-description">
-				<p>Evaluate the supplied server trust against the global SSL pinning policy previously configured. If the validation fails, pin failure reports will be sent accordingly.</p>
+				<p>Evaluate the supplied server trust against the global SSL pinning policy previously configured. If the validation fails, a pin failure report will be sent.</p>
 			</div>
 			
 		    
 
-			<div class="method-subsection method-declaration"><code>+ (TSKTrustDecision)evaluateTrust:(SecTrustRef)<em>serverTrust</em> forHostname:(NSString *)<em>serverHostname</em></code></div>
+			<div class="method-subsection method-declaration"><code>+ (TSKTrustDecision)evaluateTrust:(SecTrustRef _Nonnull)<em>serverTrust</em> forHostname:(NSString *_Nonnull)<em>serverHostname</em></code></div>
 
 		    
 			
@@ -230,9 +187,101 @@
 			
 			<div class="method-subsection discussion-section">
 				<h4 class="method-subtitle">Discussion</h4>
-				<div class="warning"><p><strong>Warning:</strong> If no SSL pinning policy was configured for the supplied <em>serverHostname</em>, this method has no effect and will return <code>TSKTrustDecisionDomainNotPinned</code> without validating the supplied <em>serverTrust</em> at all.</p>
+				<p>When using the <code>NSURLSession</code> or <code>WKWebView</code> network APIs, the <a href="#//api/name/handleChallenge:completionHandler:"><code>handleChallenge:completionHandler:</code></a> method should be called instead, as it is simpler to use.</p>
 
-<p>Because this will happen in an authentication handler, it means that the server&rsquo;s <em>serverTrust</em> object <strong>needs</strong> to be verified against the device&rsquo;s trust store using <code>SecTrustEvaluate()</code>. Failing to do so will <strong>disable SSL certificate validation</strong>.</p></div>
+<p>When using low-level network APIs (such as <code>NSStream</code>), instructions on how to retrieve the connection&rsquo;s <code>serverTrust</code> are available at <a href="https://developer.apple.com/library/mac/documentation/NetworkingInternet/Conceptual/NetworkingTopics/Articles/OverridingSSLChainValidationCorrectly.html">https://developer.apple.com/library/mac/documentation/NetworkingInternet/Conceptual/NetworkingTopics/Articles/OverridingSSLChainValidationCorrectly.html</a> .</p><div class="warning"><p><strong>Warning:</strong> If no SSL pinning policy was configured for the supplied <em>serverHostname</em>, this method has no effect and will return <code>TSKTrustDecisionDomainNotPinned</code> without validating the supplied <em>serverTrust</em> at all. This means that the server&rsquo;s <em>serverTrust</em> object <strong>must</strong> be verified against the device&rsquo;s trust store using <code>SecTrustEvaluate()</code>. Failing to do so will <strong>disable SSL certificate validation</strong>.</p></div>
+			</div>
+			
+
+			
+			<div class="method-subsection arguments-section exceptions">
+				<h4 class="method-subtitle exception-title">Exceptions</h4>
+				<table class="argument-def exception-def">
+				
+					<tr>
+						<th scope="row" class="argument-name"><code>NSException</code></th>
+						<td><p>Thrown when <a href="../Classes/TrustKit.html">TrustKit</a> has not been initialized with a pinning policy.</p></td>
+					</tr>
+				
+				</table>
+			</div>
+			
+
+			
+
+			
+			<div class="method-subsection declared-in-section">
+				<h4 class="method-subtitle">Declared In</h4>
+				<p><code class="declared-in-ref">TSKPinningValidator.h</code></p>
+			</div>
+			
+			
+		</div>
+	</div>
+</div><div class="section-method">
+	<a name="//api/name/handleChallenge:completionHandler:" title="handleChallenge:completionHandler:"></a>
+	<h3 class="method-title"><code><a href="#//api/name/handleChallenge:completionHandler:">+&nbsp;handleChallenge:completionHandler:</a></code>
+</h3>
+
+	<div class="method-info">
+		<div class="pointy-thing"></div>
+
+		<div class="method-info-container">
+			
+			
+			<div class="method-subsection brief-description">
+				<p>Helper method for handling authentication challenges received within a <code>NSURLSessionDelegate</code>, <code>NSURLSessionTaskDelegate</code> or <code>WKNavigationDelegate</code>.</p>
+			</div>
+			
+		    
+
+			<div class="method-subsection method-declaration"><code>+ (BOOL)handleChallenge:(NSURLAuthenticationChallenge *_Nonnull)<em>challenge</em> completionHandler:(void ( ^ _Nonnull ) ( NSURLSessionAuthChallengeDisposition disposition , NSURLCredential *_Nullable credential ))<em>completionHandler</em></code></div>
+
+		    
+			
+			<div class="method-subsection arguments-section parameters">
+				<h4 class="method-subtitle parameter-title">Parameters</h4>
+				<table class="argument-def parameter-def">
+				
+					<tr>
+						<th scope="row" class="argument-name"><code>challenge</code></th>
+						<td><p>The authentication challenge, supplied by the URL loading system to the delegate&rsquo;s challenge handler method.</p></td>
+					</tr>
+				
+					<tr>
+						<th scope="row" class="argument-name"><code>completionHandler</code></th>
+						<td><p>A block to invoke to respond to the challenge, supplied by the URL loading system to the delegate&rsquo;s challenge handler method.</p></td>
+					</tr>
+				
+				</table>
+			</div>
+			
+
+			
+			<div class="method-subsection return">
+				<h4 class="method-subtitle parameter-title">Return Value</h4>
+				<p><code>YES</code> if the challenge was handled and the <code>completionHandler</code> was successfuly invoked. <code>NO</code> if the challenge could not be handled because it was not for server certificate validation (ie. the challenge&rsquo;s <code>authenticationMethod</code> was not <code>NSURLAuthenticationMethodServerTrust</code>).</p>
+			</div>
+			
+
+			
+
+			
+			<div class="method-subsection discussion-section">
+				<h4 class="method-subtitle">Discussion</h4>
+				<p>This method will evaluate the server trust within the authentication challenge against the global SSL pinning policy previously configured, and then call the <code>completionHandler</code> with the corresponding <code>disposition</code> and <code>credential</code>. For example, this method can be leveraged in a <code>WKNavigationDelegate</code> challenge handler method:</p>
+
+<pre><code> - (void)webView:(WKWebView *)webView
+ didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge
+ completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition disposition,
+ NSURLCredential *credential))completionHandler
+ {
+     if ([challenge.protectionSpace.authenticationMethod isEqualToString:NSURLAuthenticationMethodServerTrust])
+     {
+         [TSKPinningValidator handleChallenge:challenge completionHandler:completionHandler];
+     }
+ }
+</code></pre>
 			</div>
 			
 
@@ -276,7 +325,7 @@
 				<footer>
 					<div class="footer-copyright">
 						
-						<p class="copyright">Copyright &copy; 2016 TrustKit. All rights reserved. Updated: 2016-06-08</p>
+						<p class="copyright">Copyright &copy; 2016 TrustKit. All rights reserved. Updated: 2016-09-07</p>
 						
 						
 						<p class="generator">Generated by <a href="http://appledoc.gentlebytes.com">appledoc 2.2.1 (build 1334)</a>.</p>
