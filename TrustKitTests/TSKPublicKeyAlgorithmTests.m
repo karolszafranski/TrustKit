@@ -69,7 +69,7 @@
                                             trustKitConfig[kTSKPinnedDomains][@"www.datatheorem.com"][kTSKPublicKeyHashes]);
     
     // Ensure the SPKI cache was used; the full certificate chain is four certs and we have to go through all of them to get to the pinned leaf
-    XCTAssert([getSpkiCache()[@0] count] == 4, @"SPKI cache for RSA 2048 must have been used");
+    XCTAssert([getSpkiCache()[@0] count] == 3, @"SPKI cache for RSA 2048 must have been used");
 
     CFRelease(trust);
     CFRelease(leafCertificate);

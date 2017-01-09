@@ -157,47 +157,7 @@ TSKPinValidationResult verifyPublicKeyPin(SecTrustRef serverTrust, NSString *ser
             }
         }
     }
-    
-#if !TARGET_OS_IPHONE
-    // OS X only: if user-defined anchors are whitelisted, allow the App to not enforce pin validation
-    NSMutableArray *customRootCerts = [NSMutableArray array];
-    
-    // Retrieve the OS X host's list of user-defined CA certificates
-    CFArrayRef userRootCerts;
-    OSStatus status = SecTrustSettingsCopyCertificates(kSecTrustSettingsDomainUser, &userRootCerts);
-    if (status == errSecSuccess)
-    {
-        [customRootCerts addObjectsFromArray:(__bridge NSArray *)(userRootCerts)];
-        CFRelease(userRootCerts);
-    }
-    CFArrayRef adminRootCerts;
-    status = SecTrustSettingsCopyCertificates(kSecTrustSettingsDomainAdmin, &adminRootCerts);
-    if (status == errSecSuccess)
-    {
-        [customRootCerts addObjectsFromArray:(__bridge NSArray *)(adminRootCerts)];
-        CFRelease(adminRootCerts);
-    }
-    
-    // Is any certificate in the chain a custom anchor that was manually added to the OS' trust store ?
-    // If we get there, we shouldn't have to check the custom certificates' trust setting (trusted / not trusted)
-    // as the chain validation was successful right before
-    if ([customRootCerts count] > 0)
-    {
-        for(int i=0;i<certificateChainLen;i++)
-        {
-            SecCertificateRef certificate = SecTrustGetCertificateAtIndex(serverTrust, i);
-            
-            // Is the certificate chain's anchor a user-defined anchor ?
-            if ([customRootCerts containsObject:(__bridge id)(certificate)])
-            {
-                TSKLog(@"Detected user-defined trust anchor in the certificate chain");
-                CFRelease(serverTrust);
-                return TSKPinValidationResultFailedUserDefinedTrustAnchor;
-            }
-        }
-    }
-#endif
-    
+        
     // If we get here, we didn't find any matching SPKI hash in the chain
     TSKLog(@"Error: SSL Pin not found for %@", serverHostname);
     CFRelease(serverTrust);
